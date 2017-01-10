@@ -27,6 +27,8 @@ import (
 
 	"runtime/debug"
 
+	"html"
+
 	"github.com/BurntSushi/toml"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -54,6 +56,8 @@ type Connection struct {
 // Config defines the available configuration options from supplied config files.
 type Config struct {
 	Listen              []string
+	TLSCertificate      string
+	TLSKey              string
 	Updateinterval      int64
 	FullUpdateInterval  int64
 	Connections         []Connection
@@ -130,6 +134,12 @@ func main() {
 
 	// make sure we log panics properly
 	defer logPanicExit()
+
+	// TODO: make rest api not return prometheus metrics, handler are shared right now!
+	// TODO: move to rest_v1.go
+	http.HandleFunc("/v1/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, %q\n", html.EscapeString(r.URL.Path))
+	})
 
 	for {
 		exitCode := mainLoop(mainSignalChannel)
