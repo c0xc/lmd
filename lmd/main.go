@@ -19,13 +19,12 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
-
-	"runtime/debug"
 
 	"html"
 

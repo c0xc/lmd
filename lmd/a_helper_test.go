@@ -1,20 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
 	"reflect"
 	"regexp"
 	"sync"
-	"time"
-
 	"syscall"
-
-	"io"
-
-	"encoding/json"
+	"testing"
+	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -232,8 +230,8 @@ func StartTestPeer(numPeers int, numHosts int, numServices int) (peer *Peer) {
 	// wait till backend is available
 	retries := 0
 	for {
-		res, err := peer.QueryString("GET backends\nColumns: status last_error\nResponseHeader: fixed16\n\n")
-		if err == nil && len(res) > 0 && len(res[0]) > 0 && res[0][0].(float64) == 0 {
+		res, err := peer.QueryString("GET backends\nColumns: status last_error\nFilter: status = 0\nResponseHeader: fixed16\n\n")
+		if err == nil && len(res) == len(sockets) && len(res[0]) > 0 && res[0][0].(float64) == 0 {
 			break
 		}
 		// recheck every 100ms
@@ -256,4 +254,22 @@ func StopTestPeer(peer *Peer) {
 	peer.QueryString("COMMAND [0] MOCK_EXIT")
 	// wait till all has stoped
 	waitTimeout(TestPeerWaitGroup, 5*time.Second)
+}
+
+func PauseTestPeers(peer *Peer) {
+	peer.PauseUpdates()
+	for _, p := range DataStore {
+		p.PauseUpdates()
+	}
+}
+
+func CheckOpenFilesLimit(b *testing.B, minimum uint64) {
+	var rLimit syscall.Rlimit
+	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
+	if err != nil {
+		b.Skip("skipping test, cannot fetch open files limit.")
+	}
+	if rLimit.Cur < minimum {
+		b.Skip(fmt.Sprintf("skipping test, open files limit too low, need at least %d, current: %d", minimum, rLimit.Cur))
+	}
 }
