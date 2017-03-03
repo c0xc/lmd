@@ -80,7 +80,7 @@ type Config struct {
 }
 
 // DataStore contains a map of available remote peers.
-var DataStore map[string]Peer
+var DataStore map[string]*Peer
 
 // DataStoreOrder contains the order of all remote peers as defined in the supplied config files.
 var DataStoreOrder []string
@@ -121,7 +121,7 @@ var lastMainRestart = time.Now().Unix()
 func init() {
 	InitObjects()
 	mainSignalChannel = make(chan os.Signal)
-	DataStore = make(map[string]Peer)
+	DataStore = make(map[string]*Peer)
 	DataStoreOrder = make([]string, 0)
 }
 
@@ -252,7 +252,7 @@ func initializePeers(GlobalConfig *Config, waitGroupPeers *sync.WaitGroup, waitG
 		var p *Peer
 		if v, ok := DataStore[c.ID]; ok {
 			if c.Equals(&v.Config) {
-				p = &v
+				p = v
 				p.waitGroup = waitGroupPeers
 				p.shutdownChannel = shutdownChannel
 			}
@@ -272,7 +272,7 @@ func initializePeers(GlobalConfig *Config, waitGroupPeers *sync.WaitGroup, waitG
 		backends = append(backends, c.ID)
 
 		// Put new or modified peer in map
-		DataStore[c.ID] = *p
+		DataStore[c.ID] = p
 		DataStoreOrder = append(DataStoreOrder, c.ID)
 		// Peer started later in node redistribution routine
 	}
